@@ -10,9 +10,12 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_HTML=${LOG_HTML:-false}
       - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
-      - TZ=Europe/London
+      - VNC_PASSWORD=${VNC_PASSWORD:-none}
+      - TZ=Europe/Moscow
     volumes:
       - ./src:/app/flaresolverr
+      - ./ContainerData/Downloads:/app/Downloads
+      - ./ContainerData/ChromeProfile:/app/ChromeProfile
     ports:
       - "${PORT:-8191}:8191"
       - "5900:5900"

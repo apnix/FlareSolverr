@@ -3,7 +3,7 @@ import platform
 import sys
 import time
 from datetime import timedelta
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 from func_timeout import FunctionTimedOut, func_timeout
 from selenium.common import TimeoutException
@@ -287,6 +287,35 @@ def click_verify(driver: WebDriver):
 
     time.sleep(2)
 
+def download_bin(driver, req, file_name):
+    script = 'try {'\
+             'let url = arguments[0];' \
+             'let file_name = arguments[1];' \
+             'let callback = arguments[arguments.length - 1];' \
+             'let xhr = new XMLHttpRequest();' \
+             'xhr.open("GET", url, true);' \
+             'xhr.responseType = "blob";' \
+             'xhr.onload = function() {' \
+             '   console.log("End");' \
+             '   if (xhr.status === 200) {' \
+             '    var downloadLink = document.createElement("a");' \
+             '    downloadLink.href = window.URL.createObjectURL(xhr.response);' \
+             '    downloadLink.download = file_name;' \
+             '    document.body.appendChild(downloadLink);' \
+             '    downloadLink.click();' \
+             '    callback(file_name);' \
+             '   } else {' \
+             '    callback("error: " + xhr.status);' \
+             '   }' \
+             '};' \
+             'console.log("Start");' \
+             'xhr.send();' \
+             '} catch(e) {' \
+             '  callback("error: " + e.name + ":" + e.message + ":" + e.stack);' \
+             '}; '
+    driver.set_script_timeout(req.maxTimeout / 1000)
+    response = driver.execute_async_script(script, req.url, file_name)
+    return response
 
 def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> ChallengeResolutionT:
     res = ChallengeResolutionT({})
@@ -298,7 +327,18 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
     if method == 'POST':
         _post_request(req, driver)
     else:
-        driver.get(req.url)
+        if req.download:
+            parsed_url = urlparse(req.url)
+            site_url = parsed_url.scheme + "://" + parsed_url.netloc
+            file_name = parsed_url.path.split("/")[-1]
+            driver.get(site_url)
+            # try:
+            download_result = download_bin(driver, req, file_name)
+            # except Exception:
+            #     download_result = "JS ERROR"
+
+        else:
+            driver.get(req.url)
 
     # set cookies if required
     if req.cookies is not None and len(req.cookies) > 0:
@@ -395,9 +435,12 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
 
     if not req.returnOnlyCookies:
         challenge_res.headers = {}  # todo: fix, selenium not provides this info
-        challenge_res.response = driver.page_source
+        if req.download:
+            res.result = download_result
+        else:
+            challenge_res.response = driver.page_source
+            res.result = challenge_res
 
-    res.result = challenge_res
     return res
 
 

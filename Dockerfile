@@ -6,6 +6,7 @@ FROM ubuntu:22.04
 # The error traces is like this: "*** stack smashing detected ***: terminated"
 # To check the package versions available you can use this command:
 #    apt-cache madison chromium
+
 WORKDIR /app/flaresolverr
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -36,12 +37,14 @@ RUN pip install -r requirements.txt && \
 
 # Create flaresolverr user
 RUN useradd --home-dir /app --shell /bin/sh flaresolverr && \
-    chown -R flaresolverr:flaresolverr . && \
-    mkdir /screenshots && \
-    chown -R flaresolverr:flaresolverr /screenshots && \
+    chown -R flaresolverr:flaresolverr /app && \
+    mkdir /app/screenshots && \
+    chown -R flaresolverr:flaresolverr /app/screenshots && \
     usermod -u 1001 flaresolverr
 
 USER flaresolverr
+
+RUN mkdir -p /app/Downloads && mkdir -p /app/ChromeProfile
 
 COPY package.json ../
 

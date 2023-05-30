@@ -1,8 +1,10 @@
+import glob
 import json
 import logging
 import os
 import re
 import shutil
+from pathlib import Path
 
 from selenium.webdriver.chrome.webdriver import WebDriver
 import undetected_chromedriver as uc
@@ -11,7 +13,7 @@ FLARESOLVERR_VERSION = None
 CHROME_EXE_PATH = None
 CHROME_MAJOR_VERSION = None
 USER_AGENT = None
-XVFB_DISPLAY = None
+XVFB_DISPLAY = ":99"
 PATCHED_DRIVER_PATH = None
 
 
@@ -40,10 +42,16 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     global PATCHED_DRIVER_PATH
     logging.debug('Launching web browser...')
 
+    user_data_dir = Path('/app/ChromeProfile')
+    # remove profile blocking files preventing the browser from launching
+    file_list = glob.glob("{}/Singleton*".format(user_data_dir))
+    for file_path in file_list:
+        os.remove(file_path)
+
     # undetected_chromedriver
     options = uc.ChromeOptions()
     options.add_argument('--no-sandbox')
-    options.add_argument('--window-size=1920,1080')
+    # options.add_argument('--window-size=1210,950')
     # todo: this param shows a warning in chrome head-full
     options.add_argument('--disable-setuid-sandbox')
     options.add_argument('--disable-dev-shm-usage')
@@ -54,6 +62,17 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     options.add_argument('--disable-software-rasterizer')
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--ignore-ssl-errors')
+
+    options.add_argument('--allow-profiles-outside-user-dir')
+    options.add_argument('--enable-profile-shortcut-manager')
+    options.add_argument("--user-data-dir={}".format(user_data_dir))
+    options.add_argument('--profile-directory=Default')
+    options.add_argument('--profiling-flush=10')
+    options.add_argument('--enable-aggressive-domstorage-flushing')
+
+    options.add_argument("--disable-quic")
+    options.add_argument("--start-maximized")
+    options.add_argument("--auto-open-devtools-for-tabs")
 
     if proxy and 'url' in proxy:
         proxy_url = proxy['url']
@@ -88,6 +107,8 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     driver = uc.Chrome(options=options, browser_executable_path=browser_executable_path,
                        driver_executable_path=driver_exe_path, version_main=version_main,
                        windows_headless=windows_headless)
+
+    driver.maximize_window()
 
     # save the patched driver to avoid re-downloads
     if driver_exe_path is None:
