@@ -16,6 +16,7 @@ services:
       - ./src:/app/flaresolverr
       - ./ContainerData/Downloads:/app/Downloads
       - ./ContainerData/ChromeProfile:/app/ChromeProfile
+      - ./ContainerData/hosts:/etc/hosts
     ports:
       - "${PORT:-8191}:8191"
       - "5900:5900"
