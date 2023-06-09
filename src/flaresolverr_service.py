@@ -316,6 +316,31 @@ def download_bin(driver, req, file_name):
     response = driver.execute_async_script(script, req.url, file_name)
     return response
 
+def getWithReferer(driver, req):
+    script = 'try {'\
+             'let url = arguments[0];' \
+             'let referer = arguments[1];' \
+             'let callback = arguments[arguments.length - 1];' \
+             'let xhr = new XMLHttpRequest();' \
+             'xhr.open("POST", url, true);' \
+             'xhr.setRequestHeader("Content-Type", arguments[2]);' \
+             'xhr.onload = function() {' \
+             '   console.log("End");' \
+             '   if (xhr.status === 200) {' \
+             '    callback(xhr.response);' \
+             '   } else {' \
+             '    callback("error: " + xhr.status);' \
+             '   }' \
+             '};' \
+             'console.log("Start");' \
+             'xhr.send("action=k_get_download");' \
+             '} catch(e) {' \
+             '  callback("error: " + e.name + ":" + e.message + ":" + e.stack);' \
+             '}; '
+    driver.set_script_timeout(req.maxTimeout / 1000)
+    response = driver.execute_async_script(script, req.url, req.referer, req.contentType,)
+    return response
+
 def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> ChallengeResolutionT:
     res = ChallengeResolutionT({})
     res.status = STATUS_OK
@@ -337,8 +362,10 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             download_result = download_bin(driver, req, file_name)
             # except Exception:
             #     download_result = "JS ERROR"
-
-        else:
+        elif req.referer:
+            driver.get(req.referer)
+            resultWithReferer = getWithReferer(driver, req)
+        else :
             driver.get(req.url)
 
     # set cookies if required
@@ -439,6 +466,8 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         challenge_res.headers = {}  # todo: fix, selenium not provides this info
         if req.download:
             res.result = download_result
+        elif req.referer:
+            res.result = resultWithReferer
         else:
             challenge_res.response = driver.page_source
             res.result = challenge_res

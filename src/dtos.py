@@ -43,6 +43,8 @@ class V1RequestBase(object):
     returnOnlyCookies: bool = None
     download: bool = None   # deprecated v2.0.0, not used
     returnRawHtml: bool = None  # deprecated v2.0.0, not used
+    referer: str = None
+    contentType: str = None
 
     def __init__(self, _dict):
         self.__dict__.update(_dict)
