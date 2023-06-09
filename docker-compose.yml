@@ -1,5 +1,14 @@
----
-version: "2.1"
+version: '3.9'
+
+networks:
+  s1:
+    driver: bridge
+    name: s1
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.223.0/28
+
 services:
   flaresolverr:
     build:
@@ -21,3 +30,6 @@ services:
       - "${PORT:-8191}:8191"
       - "5900:5900"
     restart: unless-stopped
+    networks:
+      - s1
+
