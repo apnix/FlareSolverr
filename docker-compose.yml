@@ -23,7 +23,7 @@ services:
       - TZ=Europe/Moscow
     volumes:
       - ./src:/app/flaresolverr
-      - /var/www/ExternalStorage/Cloud_Download:/app/Downloads
+      - ./ContainerData/Cloud_Download:/app/Downloads
       - ./ContainerData/ChromeProfile:/app/ChromeProfile
       - ./ContainerData/hosts:/etc/hosts
       - ./ContainerData/Supervisord:/etc/supervisor/
