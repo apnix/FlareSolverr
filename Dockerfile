@@ -22,6 +22,7 @@ RUN apt-get update && \
     xvfb \
     python3-pip \
     xvfb x11vnc fluxbox dumb-init wget mc nano \
+    supervisor \
     && \
     # Remove temporary files and hardware decoding libraries
     rm -rf /var/lib/apt/lists/* && \
@@ -41,6 +42,8 @@ RUN useradd --home-dir /app --shell /bin/sh flaresolverr && \
     mkdir /app/screenshots && \
     chown -R flaresolverr:flaresolverr /app/screenshots && \
     usermod -u 1001 flaresolverr
+
+RUN mkdir /opt/run && chown flaresolverr:flaresolverr /opt/run && chown flaresolverr:flaresolverr /var/log/supervisor
 
 USER flaresolverr
 
