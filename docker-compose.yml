@@ -23,9 +23,11 @@ services:
       - TZ=Europe/Moscow
     volumes:
       - ./src:/app/flaresolverr
-      - ./ContainerData/Downloads:/app/Downloads
+      - /var/www/ExternalStorage/Cloud_Download:/app/Downloads
       - ./ContainerData/ChromeProfile:/app/ChromeProfile
       - ./ContainerData/hosts:/etc/hosts
+      - ./ContainerData/Supervisord:/etc/supervisor/
+      - ./ContainerData/Supervisord/logs:/var/log/supervisord
     ports:
       - "${PORT:-8191}:8191"
       - "5900:5900"
