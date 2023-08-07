@@ -4,11 +4,8 @@ import logging
 import os
 import re
 import shutil
-<<<<<<< HEAD
 import urllib.parse
 import tempfile
-=======
->>>>>>> origin/master
 from pathlib import Path
 
 from selenium.webdriver.chrome.webdriver import WebDriver
