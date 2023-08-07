@@ -15,19 +15,28 @@ ENV TZ=Europe/Moscow
 # Install packages
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
-    add-apt-repository ppa:saiarcot895/chromium-beta && \
+#    add-apt-repository ppa:saiarcot895/chromium-beta && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    chromium-browser=1:108.0.5359.40-0ubuntu1~ppa1~22.04.1 \
+#    chromium-browser=1:108.0.5359.40-0ubuntu1~ppa1~22.04.1 \
     xvfb \
     python3-pip \
     xvfb x11vnc fluxbox dumb-init wget mc nano \
     supervisor \
+    procps curl vim xauth
+
+# Chrome instalation
+RUN curl -LO  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+RUN apt-get install -y ./google-chrome-stable_current_amd64.deb \
     && \
     # Remove temporary files and hardware decoding libraries
     rm -rf /var/lib/apt/lists/* && \
     rm -f /usr/lib/x86_64-linux-gnu/libmfxhw* && \
     rm -rf /root/.cache
+
+RUN rm google-chrome-stable_current_amd64.deb
+# Check chrome version
+RUN echo "Chrome: " && google-chrome --version
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -53,28 +62,5 @@ COPY package.json ../
 
 EXPOSE 8191
 EXPOSE 8192
-
-# dumb-init avoids zombie chromium processes
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-
-CMD ["/usr/local/bin/python", "-u", "/app/flaresolverr.py"]
-
-# Local build
-# docker build -t ngosang/flaresolverr:3.3.2 .
-# docker run -p 8191:8191 ngosang/flaresolverr:3.3.2
-
-# Multi-arch build
-# docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-# docker buildx create --use
-# docker buildx build -t ngosang/flaresolverr:3.3.2 --platform linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8 .
-#   add --push to publish in DockerHub
-
-# Test multi-arch build
-# docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-# docker buildx create --use
-# docker buildx build -t ngosang/flaresolverr:3.3.2 --platform linux/arm/v7 --load .
-# docker run -p 8191:8191 --platform linux/arm/v7 ngosang/flaresolverr:3.3.2
-
-CMD ["/usr/bin/python3", "-u", "/app/flaresolverr.py"]
 
 ENTRYPOINT ["/app/flaresolverr/entrypoint.sh"]

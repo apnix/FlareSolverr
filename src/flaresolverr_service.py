@@ -307,6 +307,10 @@ def download_bin(driver, req, file_name):
              '    callback("error: " + xhr.status);' \
              '   }' \
              '};' \
+             'xhr.onerror = function(e)' \
+             '{' \
+             ' callback("error: " + xhr.status);'\
+             '};' \
              'console.log("Start");' \
              'xhr.send();' \
              '} catch(e) {' \
@@ -365,7 +369,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         elif req.referer:
             driver.get(req.referer)
             resultWithReferer = getWithReferer(driver, req)
-        else :
+        else:
             driver.get(req.url)
 
     # set cookies if required
@@ -416,6 +420,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
                 break
 
     attempt = 0
+    p404 = False
     if challenge_found:
         while True:
             try:
@@ -437,10 +442,15 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             except TimeoutException:
                 logging.debug("Timeout waiting for selector")
 
-                click_verify(driver)
+                if urlparse(driver.current_url).path.startswith("/404"):
+                    logging.debug("Страница заглушка 404")
+                    p404 = True
+                    break
+                else:
+                    click_verify(driver)
 
-                # update the html (cloudflare reloads the page every 5 s)
-                html_element = driver.find_element(By.TAG_NAME, "html")
+                    # update the html (cloudflare reloads the page every 5 s)
+                    html_element = driver.find_element(By.TAG_NAME, "html")
 
         # waits until cloudflare redirection ends
         logging.debug("Waiting for redirect")
@@ -457,8 +467,12 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         res.message = "Challenge not detected!"
 
     challenge_res = ChallengeResolutionResultT({})
+    if p404:
+        challenge_res.status = 404
+    else:
+        challenge_res.status = 200
     challenge_res.url = driver.current_url
-    challenge_res.status = 200  # todo: fix, selenium not provides this info
+    # challenge_res.status = 200  # todo: fix, selenium not provides this info
     challenge_res.cookies = driver.get_cookies()
     challenge_res.userAgent = utils.get_user_agent(driver)
 
