@@ -4,8 +4,11 @@ import logging
 import os
 import re
 import shutil
+<<<<<<< HEAD
 import urllib.parse
 import tempfile
+=======
+>>>>>>> origin/master
 from pathlib import Path
 
 from selenium.webdriver.chrome.webdriver import WebDriver
@@ -144,24 +147,22 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # https://peter.sh/experiments/chromium-command-line-switches/#use-gl
     options.add_argument('--use-gl=swiftshader')
 
+    options.add_argument('--allow-profiles-outside-user-dir')
+    options.add_argument('--enable-profile-shortcut-manager')
+    options.add_argument("--user-data-dir={}".format(user_data_dir))
+    options.add_argument('--profile-directory=Default')
+    options.add_argument('--profiling-flush=10')
+    options.add_argument('--enable-aggressive-domstorage-flushing')
+
+    options.add_argument("--disable-quic")
+    options.add_argument("--start-maximized")
+    options.add_argument("--auto-open-devtools-for-tabs")
 
     proxy_extension_dir = None
     if proxy and all(key in proxy for key in ['url', 'username', 'password']):
         proxy_extension_dir = create_proxy_extension(proxy)
         options.add_argument("--load-extension=%s" % os.path.abspath(proxy_extension_dir))
-    # elif proxy and 'url' in proxy:
-    # options.add_argument('--allow-profiles-outside-user-dir')
-    # options.add_argument('--enable-profile-shortcut-manager')
-    # options.add_argument("--user-data-dir={}".format(user_data_dir))
-    # options.add_argument('--profile-directory=Default')
-    # options.add_argument('--profiling-flush=10')
-    # options.add_argument('--enable-aggressive-domstorage-flushing')
-    #
-    # options.add_argument("--disable-quic")
-    # options.add_argument("--start-maximized")
-    # options.add_argument("--auto-open-devtools-for-tabs")
-
-    if proxy and 'url' in proxy:
+    elif proxy and 'url' in proxy:
         proxy_url = proxy['url']
         logging.debug("Using webdriver proxy: %s", proxy_url)
         options.add_argument('--proxy-server=%s' % proxy_url)
@@ -198,6 +199,8 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     driver = uc.Chrome(options=options, browser_executable_path=browser_executable_path,
                        driver_executable_path=driver_exe_path, version_main=version_main,
                        windows_headless=windows_headless, headless=windows_headless)
+
+    driver.maximize_window()
 
     driver.maximize_window()
 
