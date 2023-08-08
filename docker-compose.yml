@@ -21,6 +21,7 @@ services:
       - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
       - VNC_PASSWORD=${VNC_PASSWORD:-none}
       - TZ=Europe/Moscow
+      - PROMETHEUS_ENABLED=true
     volumes:
       - ./src:/app/flaresolverr
       - ./ContainerData/Cloud_Download:/app/Downloads
@@ -30,6 +31,7 @@ services:
       - ./ContainerData/Supervisord/logs:/var/log/supervisord
     ports:
       - "${PORT:-8195}:8191"
+      - "8192:8192"
       - "5900:5900"
     restart: unless-stopped
     networks:
