@@ -15,7 +15,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.wait import WebDriverWait
 
 import utils
-from dtos import (STATUS_ERROR, STATUS_OK, ChallengeResolutionResultT,
+from dtos import (STATUS_ERROR, STATUS_FAILURE, STATUS_OK, ChallengeResolutionResultT,
                   ChallengeResolutionT, HealthResponse, IndexResponse,
                   V1RequestBase, V1ResponseBase)
 from sessions import SessionsStorage
@@ -355,22 +355,17 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
     if method == 'POST':
         _post_request(req, driver)
     else:
-        # driver.get(req.url)
-        # driver.start_session()  # required to bypass Cloudflare
         if req.download:
             parsed_url = urlparse(req.url)
             site_url = parsed_url.scheme + "://" + parsed_url.netloc
-            file_name = parsed_url.path.split("/")[-1]
-            driver.get(site_url)
-            # try:
-            download_result = download_bin(driver, req, file_name)
-            # except Exception:
-            #     download_result = "JS ERROR"
+            url = site_url
         elif req.referer:
-            driver.get(req.referer)
-            resultWithReferer = getWithReferer(driver, req)
+            url = req.referer
         else:
-            driver.get(req.url)
+            url = req.url
+
+        driver.get(url)
+        driver.start_session()  # required to bypass Cloudflare
 
     # set cookies if required
     if req.cookies is not None and len(req.cookies) > 0:
@@ -424,7 +419,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
     if challenge_found:
         while True:
             try:
-                attempt = attempt + 1
+                attempt += 1
                 # wait until the title changes
                 for title in CHALLENGE_TITLES:
                     logging.debug("Waiting for title (attempt " + str(attempt) + "): " + title)
@@ -442,52 +437,69 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             except TimeoutException:
                 logging.debug("Timeout waiting for selector")
 
-                if urlparse(driver.current_url).path.startswith("/404"):
-                    logging.debug("Страница заглушка 404")
-                    p404 = True
+                # if urlparse(driver.current_url).path.startswith("/404"):
+                #     logging.debug("Страница заглушка 404")
+                #     p404 = True
+                #     break
+
+                click_verify(driver)
+
+                # update the html (cloudflare reloads the page every 5 s)
+                html_element = driver.find_element(By.TAG_NAME, "html")
+
+                if attempt >= 10:
+                    res.status = STATUS_FAILURE
+                    res.message = "Challenge failure!"
+                    logging.debug("Maximum attempts (10) Challenge FAILURE!")
                     break
-                else:
-                    click_verify(driver)
 
-                    # update the html (cloudflare reloads the page every 5 s)
-                    html_element = driver.find_element(By.TAG_NAME, "html")
+        if res.status != STATUS_FAILURE:
+            # waits until cloudflare redirection ends
+            logging.debug("Waiting for redirect")
+            # noinspection PyBroadException
+            try:
+                WebDriverWait(driver, SHORT_TIMEOUT).until(staleness_of(html_element))
+            except Exception:
+                logging.debug("Timeout waiting for redirect")
 
-        # waits until cloudflare redirection ends
-        logging.debug("Waiting for redirect")
-        # noinspection PyBroadException
-        try:
-            WebDriverWait(driver, SHORT_TIMEOUT).until(staleness_of(html_element))
-        except Exception:
-            logging.debug("Timeout waiting for redirect")
-
-        logging.info("Challenge solved!")
-        res.message = "Challenge solved!"
+            logging.info("Challenge solved!")
+            res.message = "Challenge solved!"
     else:
         logging.info("Challenge not detected!")
         res.message = "Challenge not detected!"
 
-    challenge_res = ChallengeResolutionResultT({})
-    if p404:
-        challenge_res.status = 404
-    else:
-        challenge_res.status = 200
-    challenge_res.url = driver.current_url
-    # challenge_res.status = 200  # todo: fix, selenium not provides this info
-    challenge_res.cookies = driver.get_cookies()
-    challenge_res.userAgent = utils.get_user_agent(driver)
+    if res.status != STATUS_FAILURE:
+        challenge_res = ChallengeResolutionResultT({})
+        challenge_res.status = 200 # todo: fix, selenium not provides this info
+        challenge_res.url = driver.current_url
+        challenge_res.cookies = driver.get_cookies()
+        challenge_res.userAgent = utils.get_user_agent(driver)
 
-    if not req.returnOnlyCookies:
-        challenge_res.headers = {}  # todo: fix, selenium not provides this info
-        if req.download:
-            res.result = download_result
-        elif req.referer:
-            res.result = resultWithReferer
-        else:
+        if not req.returnOnlyCookies:
+            challenge_res.headers = {}  # todo: fix, selenium not provides this info
+            if req.download:
+                parsed_url = urlparse(req.url)
+                file_name = parsed_url.path.split("/")[-1]
+                challenge_res.response = download_bin(driver, req, file_name)
+            elif req.referer:
+                driver.get(req.referer)
+                challenge_res.response = getWithReferer(driver, req)
+            else:
+                challenge_res.response = driver.page_source
+
+        res.result = challenge_res
+    else:
+        challenge_res = ChallengeResolutionResultT({})
+        challenge_res.status = 200 # todo: fix, selenium not provides this info
+        challenge_res.url = driver.current_url
+        challenge_res.cookies = driver.get_cookies()
+        challenge_res.userAgent = utils.get_user_agent(driver)
+        if not req.returnOnlyCookies:
+            challenge_res.headers = {}
             challenge_res.response = driver.page_source
             res.result = challenge_res
 
     return res
-
 
 def _post_request(req: V1RequestBase, driver: WebDriver):
     post_form = f'<form id="hackForm" action="{req.url}" method="POST">'

@@ -1,7 +1,7 @@
 
 STATUS_OK = "ok"
 STATUS_ERROR = "error"
-
+STATUS_FAILURE = "failure сhallenge"
 
 class ChallengeResolutionResultT:
     url: str = None
