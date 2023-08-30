@@ -24,7 +24,7 @@ fi
 
 /usr/bin/fluxbox -display :99 -screen 0 &
 
-export LOG_LEVEL=debug
+#export LOG_LEVEL=debug
 
 #if [ "$VNC_PASSWORD" = "none" ]; then
 #  x11vnc -display :99.0 -forever &
