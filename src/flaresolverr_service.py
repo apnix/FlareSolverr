@@ -12,10 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.expected_conditions import (
     presence_of_element_located, staleness_of, title_is)
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.support.wait import WebDriverWait
-
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 import utils
 from dtos import (STATUS_ERROR, STATUS_FAILURE, STATUS_OK, ChallengeResolutionResultT,
@@ -29,18 +26,21 @@ ACCESS_DENIED_TITLES = [
     # Cloudflare http://bitturk.net/ Firefox
     'Attention Required! | Cloudflare'
 ]
+
 ACCESS_DENIED_SELECTORS = [
     # Cloudflare
     'div.cf-error-title span.cf-code-label span',
     # Cloudflare http://bitturk.net/ Firefox
     '#cf-error-details div.cf-error-overview h1'
 ]
+
 CHALLENGE_TITLES = [
     # Cloudflare
     'Just a moment...',
     # DDoS-GUARD
     'DDoS-Guard'
 ]
+
 CHALLENGE_SELECTORS = [
     # Cloudflare
     '#cf-challenge-running', '.ray_id', '.attack-box', '#cf-please-wait', '#challenge-spinner', '#trk_jschal_js',
@@ -49,6 +49,7 @@ CHALLENGE_SELECTORS = [
     # Fairlane / pararius.com
     'div.vc div.text-box h2'
 ]
+
 SHORT_TIMEOUT = 1
 SESSIONS_STORAGE = SessionsStorage()
 
@@ -289,64 +290,75 @@ def click_verify(driver: WebDriver):
 
     time.sleep(2)
 
+
 def download_bin(driver, req, file_name):
-    script = 'try {'\
-             'let url = arguments[0];' \
-             'let file_name = arguments[1];' \
-             'let callback = arguments[arguments.length - 1];' \
-             'let xhr = new XMLHttpRequest();' \
-             'xhr.open("GET", url, true);' \
-             'xhr.responseType = "blob";' \
-             'xhr.onload = function() {' \
-             '   console.log("End");' \
-             '   if (xhr.status === 200) {' \
-             '    var downloadLink = document.createElement("a");' \
-             '    downloadLink.href = window.URL.createObjectURL(xhr.response);' \
-             '    downloadLink.download = file_name;' \
-             '    document.body.appendChild(downloadLink);' \
-             '    downloadLink.click();' \
-             '    callback(file_name);' \
-             '   } else {' \
-             '    callback("error: " + xhr.status);' \
-             '   }' \
-             '};' \
-             'xhr.onerror = function(e)' \
-             '{' \
-             ' callback("error: " + xhr.status);'\
-             '};' \
-             'console.log("Start");' \
-             'xhr.send();' \
-             '} catch(e) {' \
-             '  callback("error: " + e.name + ":" + e.message + ":" + e.stack);' \
-             '}; '
+    script = """
+            try {
+                let url = arguments[0];
+                let file_name = arguments[1];
+                let callback = arguments[arguments.length - 1];
+                let xhr = new XMLHttpRequest();
+                xhr.open("GET", url, true);
+                xhr.responseType = "blob";
+                xhr.onload = function() {
+                    console.log("End");
+                    if (xhr.status === 200) {
+                        var downloadLink = document.createElement("a");
+                        downloadLink.href = window.URL.createObjectURL(xhr.response);
+                        downloadLink.download = file_name;
+                        document.body.appendChild(downloadLink);
+                        downloadLink.click();
+                        callback(file_name);
+                    } else {
+                        console.log('HTTP Status Error:', error);
+                        callback("JSERR");
+                    }
+                };
+                xhr.onerror = function(e) {
+                    console.log('Error:', error);
+                    callback("JSERR");
+                };
+                console.log("Start");
+                xhr.send();
+            } catch(e) {
+                console.log('Error: ', e.name + ":" + e.message + ":" + e.stack);
+                callback("JSERR");
+            }
+            """
     driver.set_script_timeout(req.maxTimeout / 1000)
     response = driver.execute_async_script(script, req.url, file_name)
     return response
 
+
 def getWithReferer(driver, req):
-    script = 'try {'\
-             'let url = arguments[0];' \
-             'let referer = arguments[1];' \
-             'let callback = arguments[arguments.length - 1];' \
-             'let xhr = new XMLHttpRequest();' \
-             'xhr.open("POST", url, true);' \
-             'xhr.setRequestHeader("Content-Type", arguments[2]);' \
-             'xhr.onload = function() {' \
-             '   console.log("End");' \
-             '   if (xhr.status === 200) {' \
-             '    callback(xhr.response);' \
-             '   } else {' \
-             '    callback("error: " + xhr.status);' \
-             '   }' \
-             '};' \
-             'console.log("Start");' \
-             'xhr.send("action=k_get_download");' \
-             '} catch(e) {' \
-             '  callback("error: " + e.name + ":" + e.message + ":" + e.stack);' \
-             '}; '
+    script = """
+            try {
+                let url = arguments[0];
+                let referer = arguments[1];
+                let callback = arguments[arguments.length - 1];
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", url, true);
+                xhr.setRequestHeader("Content-Type", arguments[2]);
+                xhr.onload = function() {
+                    console.log("End");
+                    if (xhr.status === 200) {
+                        callback(xhr.response);
+                    } else {
+                        console.log('HTTP Status Error:', error);
+                        callback("JSERR");
+                    }
+                };
+                console.log("Start");
+                xhr.send("action=k_get_download");
+            } catch(e) {
+                console.log('Error: ', e.name + ":" + e.message + ":" + e.stack);
+                callback("JSERR");
+            }
+            """
     driver.set_script_timeout(req.maxTimeout / 1000)
     response = driver.execute_async_script(script, req.url, req.referer, req.contentType,)
     return response
+
 
 def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> ChallengeResolutionT:
     res = ChallengeResolutionT({})
@@ -418,7 +430,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
                 break
 
     attempt = 0
-    p404 = False
+    # p404 = False
     if challenge_found:
         while True:
             try:
@@ -475,18 +487,18 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             try {
                 let callback = arguments[arguments.length - 1];
                 const httpStatus = fetch(window.location.href, { method: 'HEAD' })
-                  .then(response => {
-                    console.log('HTTP Status Code:', response.status);
-                    callback(response.status);
-                  })
-                  .catch(error => {
-                    console.log('HTTP Status Error!:', error);
-                    callback('JSERR');
-                  });
-            } catch(e) {
+                .then(response => {
+                console.log('HTTP Status Code:', response.status);
+                callback(response.status);
+                })
+                .catch(error => {
                 console.log('HTTP Status Error!:', error);
                 callback('JSERR');
-            };
+                });
+                } catch(e) {
+                console.log('HTTP Status Error!:', error);
+                callback('JSERR');
+                };
             """
     driver.set_script_timeout(3)
     http_status = driver.execute_async_script(http_status_script)
