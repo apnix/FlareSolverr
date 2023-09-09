@@ -356,7 +356,7 @@ def getWithReferer(driver, req):
             }
             """
     driver.set_script_timeout(req.maxTimeout / 1000)
-    response = driver.execute_async_script(script, req.url, req.referer, req.contentType,)
+    response = driver.execute_async_script(script, req.url, req.referer, req.contentType)
     return response
 
 
@@ -517,7 +517,10 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             if req.download:
                 parsed_url = urlparse(req.url)
                 file_name = parsed_url.path.split("/")[-1]
-                challenge_res.response = download_bin(driver, req, file_name)
+                if file_name == '':
+                    challenge_res.response = 'FILEERR'
+                else:
+                    challenge_res.response = download_bin(driver, req, file_name)
             elif req.referer:
                 driver.get(req.referer)
                 challenge_res.response = getWithReferer(driver, req)
@@ -537,6 +540,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             res.result = challenge_res
 
     return res
+
 
 def _post_request(req: V1RequestBase, driver: WebDriver):
     post_form = f'<form id="hackForm" action="{req.url}" method="POST">'
