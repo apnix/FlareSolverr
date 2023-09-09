@@ -14,6 +14,9 @@ from selenium.webdriver.support.expected_conditions import (
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.wait import WebDriverWait
 
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 import utils
 from dtos import (STATUS_ERROR, STATUS_FAILURE, STATUS_OK, ChallengeResolutionResultT,
                   ChallengeResolutionT, HealthResponse, IndexResponse,
@@ -468,9 +471,31 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         logging.info("Challenge not detected!")
         res.message = "Challenge not detected!"
 
+    http_status_script = """
+            try {
+                let callback = arguments[arguments.length - 1];
+                const httpStatus = fetch(window.location.href, { method: 'HEAD' })
+                  .then(response => {
+                    console.log('HTTP Status Code:', response.status);
+                    callback(response.status);
+                  })
+                  .catch(error => {
+                    console.log('HTTP Status Error!:', error);
+                    callback('JSERR');
+                  });
+            } catch(e) {
+                console.log('HTTP Status Error!:', error);
+                callback('JSERR');
+            };
+            """
+    driver.set_script_timeout(3)
+    http_status = driver.execute_async_script(http_status_script)
+    # http_status = driver.execute_script(http_status_script)
+    logging.info(f'HTTP Status Code: {http_status}')
+
     if res.status != STATUS_FAILURE:
         challenge_res = ChallengeResolutionResultT({})
-        challenge_res.status = 200 # todo: fix, selenium not provides this info
+        challenge_res.status = http_status
         challenge_res.url = driver.current_url
         challenge_res.cookies = driver.get_cookies()
         challenge_res.userAgent = utils.get_user_agent(driver)
@@ -490,7 +515,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         res.result = challenge_res
     else:
         challenge_res = ChallengeResolutionResultT({})
-        challenge_res.status = 200 # todo: fix, selenium not provides this info
+        challenge_res.status = http_status
         challenge_res.url = driver.current_url
         challenge_res.cookies = driver.get_cookies()
         challenge_res.userAgent = utils.get_user_agent(driver)
