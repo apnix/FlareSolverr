@@ -13,6 +13,7 @@ from selenium.webdriver.support.expected_conditions import (
     presence_of_element_located, staleness_of, title_is)
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
+import traceback
 
 import utils
 from dtos import (STATUS_ERROR, STATUS_FAILURE, STATUS_OK, ChallengeResolutionResultT,
@@ -246,7 +247,7 @@ def _resolve_challenge(req: V1RequestBase, method: str) -> ChallengeResolutionT:
     except FunctionTimedOut:
         raise Exception(f'Error solving the challenge. Timeout after {timeout} seconds.')
     except Exception as e:
-        raise Exception('Error solving the challenge. ' + str(e).replace('\n', '\\n'))
+        raise Exception('Error solving the challenge. ' + str(e) + traceback.format_exc())
     finally:
         if not req.session and driver is not None:
             driver.quit()
@@ -387,7 +388,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         _post_request(req, driver)
     else:
         if req.download:
-            parsed_url = urlparse(req.url)
+            parsed_url = urlparse(req.url.replace('https:///', 'https://'))
             site_url = parsed_url.scheme + "://" + parsed_url.netloc
             url = site_url
         elif req.referer:
