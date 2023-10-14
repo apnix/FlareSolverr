@@ -310,7 +310,7 @@ def download_bin(driver, req, file_name):
                   callback(file_name);
                 } else {
                   console.log('HTTP Status Error:', xhr.status);
-                  if (attempts > 0 && xhr.status != attempts) {
+                  if (attempts > 0 && xhr.status != 404) {
                     setTimeout(function() {
                       makeRequest(url, file_name, callback, attempts - 1, delay);
                     }, delay);
