@@ -355,13 +355,14 @@ def getWithReferer(driver, req):
                 let callback = arguments[arguments.length - 1];
                 let xhr = new XMLHttpRequest();
                 xhr.open("POST", url, true);
-                xhr.setRequestHeader("Content-Type", arguments[2]);
+                xhr.setRequestHeader("Content-Type", 'application/x-www-form-urlencoded');
+                xhr.setRequestHeader("Referer", referer);
                 xhr.onload = function() {
                     console.log("End");
                     if (xhr.status === 200) {
                         callback(xhr.response);
                     } else {
-                        console.log('Error: ', e.name + ":" + e.message);
+                        console.log('Error status: ', xhr.status);
                         callback("JSERR");
                     }
                 };
@@ -373,7 +374,7 @@ def getWithReferer(driver, req):
             }
             """
     driver.set_script_timeout(req.maxTimeout / 1000)
-    response = driver.execute_async_script(script, req.url, req.referer, req.contentType)
+    response = driver.execute_async_script(script, req.url, req.referer)
     return response
 
 
