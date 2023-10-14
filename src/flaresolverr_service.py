@@ -293,36 +293,52 @@ def click_verify(driver: WebDriver):
 
 def download_bin(driver, req, file_name):
     script = """
-            try {
-                let url = arguments[0];
-                let file_name = arguments[1];
-                let callback = arguments[arguments.length - 1];
-                let xhr = new XMLHttpRequest();
-                xhr.open("GET", url, true);
-                xhr.responseType = "blob";
-                xhr.onload = function() {
-                    console.log("End");
-                    if (xhr.status === 200) {
-                        var downloadLink = document.createElement("a");
-                        downloadLink.href = window.URL.createObjectURL(xhr.response);
-                        downloadLink.download = file_name;
-                        document.body.appendChild(downloadLink);
-                        downloadLink.click();
-                        callback(file_name);
-                    } else {
-                        console.log('HTTP Status Error:', error);
-                        callback("JSERR");
-                    }
-                };
-                xhr.onerror = function(e) {
-                    console.log('Error:', error);
+            function makeRequest(url, file_name, callback, attempts = 5, delay = 5000) {
+              let xhr = new XMLHttpRequest();
+              xhr.open("GET", url, true);
+              xhr.responseType = "blob";
+              
+              xhr.onload = function() {
+                console.log("End");
+                if (xhr.status === 200) {
+                  var downloadLink = document.createElement("a");
+                  downloadLink.href = window.URL.createObjectURL(xhr.response);
+                  downloadLink.download = file_name;
+                  document.body.appendChild(downloadLink);
+                  downloadLink.click();
+                  callback(file_name);
+                } else {
+                  console.log('HTTP Status Error:', xhr.status);
+                  if (attempts > 0) {
+                    setTimeout(function() {
+                      makeRequest(url, file_name, callback, attempts - 1, delay);
+                    }, delay);
+                  } else {
                     callback("JSERR");
-                };
-                console.log("Start");
-                xhr.send();
+                  }
+                }
+              };
+              
+              xhr.onerror = function(e) {
+                console.log(e);
+                if (attempts > 0) {
+                  setTimeout(function() {
+                    makeRequest(url, file_name, callback, attempts - 1, delay);
+                  }, delay);
+                } else {
+                  callback("JSERR Attempts");
+                }
+              };
+              
+              console.log("Start");
+              xhr.send();
+            }
+            
+            try {
+              makeRequest(arguments[0], arguments[1], arguments[arguments.length - 1]);
             } catch(e) {
-                console.log('Error: ', e.name + ":" + e.message + ":" + e.stack);
-                callback("JSERR");
+              console.log('Error: ', e.name + ":" + e.message);
+              callback("JSERR");
             }
             """
     driver.set_script_timeout(req.maxTimeout / 1000)
@@ -344,14 +360,14 @@ def getWithReferer(driver, req):
                     if (xhr.status === 200) {
                         callback(xhr.response);
                     } else {
-                        console.log('HTTP Status Error:', error);
+                        console.log('Error: ', e.name + ":" + e.message);
                         callback("JSERR");
                     }
                 };
                 console.log("Start");
                 xhr.send("action=k_get_download");
             } catch(e) {
-                console.log('Error: ', e.name + ":" + e.message + ":" + e.stack);
+                console.log('Error: ', e.name + ":" + e.message);
                 callback("JSERR");
             }
             """
