@@ -153,7 +153,7 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
 
     options.add_argument("--disable-quic")
     options.add_argument("--start-maximized")
-    options.add_argument("--auto-open-devtools-for-tabs")
+    # options.add_argument("--auto-open-devtools-for-tabs")
 
     proxy_extension_dir = None
     if proxy and all(key in proxy for key in ['url', 'username', 'password']):
