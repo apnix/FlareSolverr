@@ -155,6 +155,8 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     options.add_argument("--start-maximized")
     # options.add_argument("--auto-open-devtools-for-tabs")
 
+    options.add_argument('--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1')
+
     proxy_extension_dir = None
     if proxy and all(key in proxy for key in ['url', 'username', 'password']):
         proxy_extension_dir = create_proxy_extension(proxy)
