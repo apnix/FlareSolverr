@@ -115,7 +115,7 @@ def create_proxy_extension(proxy: dict) -> str:
 
 
 def get_webdriver(proxy: dict = None) -> WebDriver:
-    global PATCHED_DRIVER_PATH
+    global PATCHED_DRIVER_PATH, USER_AGENT
     logging.debug('Launching web browser...')
 
     user_data_dir = Path('/app/ChromeProfile')
@@ -156,6 +156,10 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # options.add_argument("--auto-open-devtools-for-tabs")
 
     options.add_argument('--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1')
+
+    # Fix for Chrome 117 | https://github.com/FlareSolverr/FlareSolverr/issues/910
+    if USER_AGENT is not None:
+        options.add_argument('--user-agent=%s' % USER_AGENT)
 
     proxy_extension_dir = None
     if proxy and all(key in proxy for key in ['url', 'username', 'password']):
@@ -316,6 +320,8 @@ def get_user_agent(driver=None) -> str:
         if driver is None:
             driver = get_webdriver()
         USER_AGENT = driver.execute_script("return navigator.userAgent")
+        # Fix for Chrome 117 | https://github.com/FlareSolverr/FlareSolverr/issues/910
+        USER_AGENT = re.sub('HEADLESS', '', USER_AGENT, flags=re.IGNORECASE)
         return USER_AGENT
     except Exception as e:
         raise Exception("Error getting browser User-Agent. " + str(e))
