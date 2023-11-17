@@ -815,6 +815,11 @@ class Chrome(selenium.webdriver.chrome.webdriver.WebDriver):
                     break
                 time.sleep(0.1)
 
+                try:
+                    time.sleep(0.1)
+                except OSError:
+                    pass
+
         # dereference patcher, so patcher can start cleaning up as well.
         # this must come last, otherwise it will throw 'in use' errors
         self.patcher = None
