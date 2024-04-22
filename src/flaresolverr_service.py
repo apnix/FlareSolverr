@@ -294,50 +294,37 @@ def click_verify(driver: WebDriver):
 
 def download_bin(driver, req, file_name):
     script = """
-            function makeRequest(url, file_name, callback, attempts = 5, delay = 5000) {
-              let xhr = new XMLHttpRequest();
-              xhr.open("GET", url, true);
-              xhr.responseType = "blob";
-              
-              xhr.onload = function() {
-                console.log("End");
-                if (xhr.status === 200) {
+            function makeRequest(url, file_name, callback, attempts = 10, delay = 5000) {
+              fetch(url)
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error('HTTP Status Error: ' + response.status);
+                  }
+                  return response.blob();
+                })
+                .then(blob => {
                   var downloadLink = document.createElement("a");
-                  downloadLink.href = window.URL.createObjectURL(xhr.response);
+                  downloadLink.href = window.URL.createObjectURL(blob);
                   downloadLink.download = file_name;
                   document.body.appendChild(downloadLink);
                   downloadLink.click();
                   callback(file_name);
-                } else {
-                  console.log('HTTP Status Error:', xhr.status);
-                  if (attempts > 0 && xhr.status != 404) {
+                })
+                .catch(error => {
+                  console.error('Error:', error);
+                  if (attempts > 0 && error.message !== 'HTTP Status Error: 404') {
                     setTimeout(function() {
                       makeRequest(url, file_name, callback, attempts - 1, delay);
                     }, delay);
                   } else {
                     callback("JSERR");
                   }
-                }
-              };
-              
-              xhr.onerror = function(e) {
-                console.log(e);
-                if (attempts > 0) {
-                  setTimeout(function() {
-                    makeRequest(url, file_name, callback, attempts - 1, delay);
-                  }, delay);
-                } else {
-                  callback("JSERR Attempts");
-                }
-              };
-              
-              console.log("Start");
-              xhr.send();
+                });
             }
             
             try {
               makeRequest(arguments[0], arguments[1], arguments[arguments.length - 1]);
-            } catch(e) {
+            } catch (e) {
               console.log('Error: ', e.name + ":" + e.message);
               callback("JSERR");
             }
@@ -396,6 +383,18 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             url = req.referer
         else:
             url = req.url
+
+        if "cloud.liteapks.com" in url:
+            logging.info("открываем cloud.liteapks.com ")
+            driver.get('https://liteapks.com')
+            start_time = time.time()
+            logging.info("Таймаут 3 сек")
+            while True:
+                if time.time() - start_time >= 3:
+                    break
+                else:
+                    pass
+            logging.info("Таймаут истек")
 
         driver.get(url)
         driver.start_session()  # required to bypass Cloudflare
