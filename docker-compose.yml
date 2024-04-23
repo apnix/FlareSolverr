@@ -25,6 +25,7 @@ services:
       - ./src:/app/flaresolverr
       - ./ContainerData/Cloud_Download:/app/Downloads
       - ./ContainerData/ChromeProfile:/app/ChromeProfile
+      - ./ContainerData/Extensions:/app/Extensions
       - ./ContainerData/hosts:/etc/hosts
       - ./ContainerData/Supervisord:/etc/supervisor/
       - ./ContainerData/Supervisord/logs:/var/log/supervisord

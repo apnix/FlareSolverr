@@ -114,6 +114,8 @@ def create_proxy_extension(proxy: dict) -> str:
     return proxy_extension_dir
 
 
+
+
 def get_webdriver(proxy: dict = None) -> WebDriver:
     global PATCHED_DRIVER_PATH, USER_AGENT
     logging.debug('Launching web browser...')
@@ -157,6 +159,10 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
 
     #options.add_argument('--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1')
 
+    extensions_dir = Path('/app/Extensions/uBlock-Origin')
+    ex = "--load-extension={}".format(extensions_dir)
+    options.add_argument(ex)
+
     # Fix for Chrome 117 | https://github.com/FlareSolverr/FlareSolverr/issues/910
     if USER_AGENT is not None:
         options.add_argument('--user-agent=%s' % USER_AGENT)
@@ -173,11 +179,7 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # note: headless mode is detected (options.headless = True)
     # we launch the browser in head-full mode with the window hidden
     windows_headless = False
-    if get_config_headless():
-        if os.name == 'nt':
-            windows_headless = True
-        else:
-            start_xvfb_display()
+    start_xvfb_display()
 
     # if we are inside the Docker container, we avoid downloading the driver
     driver_exe_path = None
